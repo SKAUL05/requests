@@ -303,14 +303,14 @@ class RequestsCookieJar(cookielib.CookieJar, MutableMapping):
 
         :rtype: dict
         """
-        dictionary = {}
-        for cookie in iter(self):
+        return {
+            cookie.name: cookie.value
+            for cookie in iter(self)
             if (
-                (domain is None or cookie.domain == domain) and
-                (path is None or cookie.path == path)
-            ):
-                dictionary[cookie.name] = cookie.value
-        return dictionary
+                (domain is None or cookie.domain == domain)
+                and (path is None or cookie.path == path)
+            )
+        }
 
     def __contains__(self, name):
         try:
@@ -460,8 +460,7 @@ def create_cookie(name, value, **kwargs):
         'rfc2109': False,
     }
 
-    badargs = set(kwargs) - set(result)
-    if badargs:
+    if badargs := set(kwargs) - set(result):
         err = 'create_cookie() got unexpected keyword arguments: %s'
         raise TypeError(err % list(badargs))
 
@@ -482,7 +481,7 @@ def morsel_to_cookie(morsel):
         try:
             expires = int(time.time() + int(morsel['max-age']))
         except ValueError:
-            raise TypeError('max-age: %s must be integer' % morsel['max-age'])
+            raise TypeError(f"max-age: {morsel['max-age']} must be integer")
     elif morsel['expires']:
         time_template = '%a, %d-%b-%Y %H:%M:%S GMT'
         expires = calendar.timegm(

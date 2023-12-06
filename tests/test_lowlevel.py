@@ -17,7 +17,7 @@ def test_chunked_upload():
     data = iter([b'a', b'b', b'c'])
 
     with server as (host, port):
-        url = 'http://{}:{}/'.format(host, port)
+        url = f'http://{host}:{port}/'
         r = requests.post(url, data=data, stream=True)
         close_server.set()  # release server block
 
@@ -169,7 +169,7 @@ def test_digestauth_only_on_4xx():
         r = requests.get(url, auth=auth)
         # Verify server didn't receive auth from us.
         assert r.status_code == 200
-        assert len(r.history) == 0
+        assert not r.history
         close_server.set()
 
 
@@ -181,18 +181,16 @@ _schemes_by_var_prefix = [
 
 _proxy_combos = []
 for prefix, schemes in _schemes_by_var_prefix:
-    for scheme in schemes:
-        _proxy_combos.append(("{}_proxy".format(prefix), scheme))
-
+    _proxy_combos.extend((f"{prefix}_proxy", scheme) for scheme in schemes)
 _proxy_combos += [(var.upper(), scheme) for var, scheme in _proxy_combos]
 
 
 @pytest.mark.parametrize("var,scheme", _proxy_combos)
 def test_use_proxy_from_environment(httpbin, var, scheme):
-    url = "{}://httpbin.org".format(scheme)
+    url = f"{scheme}://httpbin.org"
     fake_proxy = Server()  # do nothing with the requests; just close the socket
     with fake_proxy as (host, port):
-        proxy_url = "socks5://{}:{}".format(host, port)
+        proxy_url = f"socks5://{host}:{port}"
         kwargs = {var: proxy_url}
         with override_environ(**kwargs):
             # fake proxy's lack of response will cause a ConnectionError
